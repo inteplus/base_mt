@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-setup(name='base-mt',
+setup(name='basemt',
       version='0.0.1',
       description="Most fundamental Python modules for Minh-Tri Pham",
       author=["Minh-Tri Pham"],

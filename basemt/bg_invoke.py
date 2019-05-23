@@ -3,7 +3,7 @@
 
 import threading as _t
 import sys as _sys
-import base_mt.traceback as _tb
+import basemt.traceback as _tb
 
 class BgException(Exception):
 
@@ -30,7 +30,7 @@ class BgInvoke(object):
     ...         cnt = cnt+1
     ...     return cnt
     ...
-    >>> from base_mt.bg_invoke import BgInvoke
+    >>> from basemt.bg_invoke import BgInvoke
     >>> from time import sleep
     >>> a = BgInvoke(slow_count, nbTimes=100000000)
     >>> while a.is_running():

@@ -9,7 +9,7 @@ from multiprocessing.dummy import Pool # use threads
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from threading import Lock, Semaphore
-from base_mt.concurrency import bg_run, is_future
+from basemt.concurrency import bg_run, is_future
 
 
 

@@ -5,13 +5,13 @@ import os.path as _op
 import stat as _st
 import shutil as _su
 import atexit as _ex
-import base_mt.threading as _th
+import basemt.threading as _th
 import time as _t
 
 from os import rename, utime, walk, stat
 from os.path import *
 from glob import glob
-from base_mt import logger
+from basemt import logger
 
 def remove(path):
     '''Removes a path completely, regardless of it being a file or a folder. If the path does not exist, do nothing.'''

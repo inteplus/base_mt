@@ -4,7 +4,7 @@ import logging.handlers as _lh
 import sys as _sys
 import os as _os
 import os.path as _op
-import base_mt.traceback as _tb
+import basemt.traceback as _tb
 import tempfile as _tf
 from colorama import Fore, Style
 
@@ -315,10 +315,10 @@ def init():
     if init._completed:
         return
 
-    setattr(init, '_home_dirpath', _op.join(_op.expanduser('~'), '.base_mt'))
+    setattr(init, '_home_dirpath', _op.join(_op.expanduser('~'), '.basemt'))
     _os.makedirs(init._home_dirpath, exist_ok=True)
 
-    temp_dirpath = _op.join(_tf.gettempdir(), '.base_mt')
+    temp_dirpath = _op.join(_tf.gettempdir(), '.basemt')
     _os.makedirs(temp_dirpath, exist_ok=True)
     setattr(init, '_temp_dirpath', temp_dirpath)
 

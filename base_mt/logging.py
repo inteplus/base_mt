@@ -241,6 +241,7 @@ def make_logger(logger_name, max_indent=4):
     The generated logger has 2 handlers, one standard output and one watched file handler. Both handlers threshold at DEBUG. The standard handler further thresholds at `max_indent`. The debug handler thresholds at DEBUG level. The standard handler is brief, not showing thread id. The debug level is verbose, showing everything.
 
     '''
+    init()
 
     logger = getLogger(logger_name)
     logger.setLevel(1) # capture everything but let the handlers decide

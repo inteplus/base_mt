@@ -2,11 +2,14 @@
 from logging import *
 import logging.handlers as _lh
 import sys as _sys
+import shutil as _sh
 import os as _os
 import os.path as _op
 import basemt.traceback as _tb
 import tempfile as _tf
 from colorama import Fore, Style
+from colorama import init as _colorama_init
+_colorama_init()
 
 
 class DummyScopeForWithStatement(object):
@@ -200,14 +203,8 @@ _format_str = Fore.CYAN+'%(asctime)s '+Fore.LIGHTGREEN_EX+'%(levelname)8s'+Fore.
 
 def stty_size():
     '''Returns the Linux-compatible console's number of rows and number of characters per row. If the information does not exist, returns (72, 128).'''
-    try:
-        res = _os.popen('stty size', 'r').read().split()
-        res = tuple(int(x) for x in res)
-        if len(res) != 2:
-            raise RuntimeError()
-        return res
-    except:
-        return (72, 128)
+    res = _sh.get_terminal_size(fall_back=(128, 72))
+    return res[1], res[0]
 
 old_factory = getLogRecordFactory()
 

@@ -203,7 +203,7 @@ _format_str = Fore.CYAN+'%(asctime)s '+Fore.LIGHTGREEN_EX+'%(levelname)8s'+Fore.
 
 def stty_size():
     '''Returns the Linux-compatible console's number of rows and number of characters per row. If the information does not exist, returns (72, 128).'''
-    res = _sh.get_terminal_size(fall_back=(128, 72))
+    res = _sh.get_terminal_size(fallback=(128, 72))
     return res[1], res[0]
 
 old_factory = getLogRecordFactory()

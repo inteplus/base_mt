@@ -17,8 +17,6 @@ class DummyScopeForWithStatement(object):
 
     >>> with dummy_scope:
     ...     a = 1
-    ...     logger.info("Hi there")
-    Hi there
 
     '''
     def __enter__(self):

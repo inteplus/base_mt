@@ -13,6 +13,14 @@ _colorama_init()
 
 
 class DummyScopeForWithStatement(object):
+    '''Dummy scope for the with statement.
+
+    >>> with dummy_scope:
+    ...     a = 1
+    ...     logger.info("Hi there")
+    Hi there
+
+    '''
     def __enter__(self):
         return self
 
@@ -264,7 +272,7 @@ def make_logger(logger_name, max_indent=4):
         std_handler.addFilter(std_filter)
 
         # determine some max string lengths
-        column_length = stty_size()[1]-32
+        column_length = stty_size()[1]-33
         log_lvl_length = min(max(int(column_length*0.03), 1), 8)
         s1 = '{}.{}s '.format(log_lvl_length, log_lvl_length)
         column_length -= log_lvl_length

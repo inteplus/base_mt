@@ -11,7 +11,6 @@ setup(name='basemt',
         'colorama', # for colored text
         'Cython', # for fast speed on tiny objects
         'dask[distributed]', # for simple multiprocessing jobs
-        'dask[dataframe]', # for reading chunks of CSV files in parallel
       ]
     )
 

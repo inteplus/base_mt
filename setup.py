@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name='basemt',
-      version='0.0.2',
+      version='0.0.3',
       description="Most fundamental Python modules for Minh-Tri Pham",
       author=["Minh-Tri Pham"],
       packages=find_packages(),

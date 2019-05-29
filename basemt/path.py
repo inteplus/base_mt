@@ -1,4 +1,7 @@
-'''Useful functions dealing with paths.'''
+'''Useful functions dealing with paths.
+
+MT-NOTE: For backward compatibility only. Use module `basemt.net` instead.'''
+
 
 import os as _os
 import os.path as _op

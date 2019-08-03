@@ -5,13 +5,13 @@ MT-NOTE: For backward compatibility only. Use module `basemt.net` instead.'''
 
 import os as _os
 import os.path as _op
-import stat as _st
 import shutil as _su
 import atexit as _ex
 import basemt.threading as _th
 import time as _t
+import platform as _pl
 
-from os import rename, utime, walk, stat
+from os import rename, utime, walk, stat, chmod
 from os.path import *
 from glob import glob
 from basemt import logger
@@ -25,8 +25,10 @@ def remove(path):
     elif isdir(path):
         try:
             _su.rmtree(path)
-        except OSError:
-            pass # this can sometimes fail on Windows
+        except OSError as e:
+            if _pl.system() == 'Windows':
+                pass # this can sometimes fail on Windows
+            raise e
 
 def make_dirs(path, shared=True):
     '''Convenient invocation of `os.makedirs(path, exist_ok=True)`. If `shared` is True, every newly created folder will have permission 0o775.'''
@@ -45,7 +47,7 @@ def make_dirs(path, shared=True):
             tail = stack.pop()
             path = join(path, tail)
             _os.mkdir(path, 0o775)
-            _os.chmod(path, mode=_st.S_IRWXU | _st.S_IRWXG | _st.S_IROTH | _st.S_IXOTH)
+            _os.chmod(path, mode=0o775)
     else:
         _os.makedirs(path, mode=0o775, exist_ok=True)
 

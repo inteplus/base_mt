@@ -11,6 +11,8 @@ from colorama import Fore, Style
 from colorama import init as _colorama_init
 _colorama_init()
 
+from .str import straighten
+
 
 class DummyScopeForWithStatement(object):
     '''Dummy scope for the with statement.
@@ -270,7 +272,7 @@ def make_logger(logger_name, max_indent=4):
         std_handler.addFilter(std_filter)
 
         # determine some max string lengths
-        column_length = stty_size()[1]-33
+        column_length = stty_size()[1]-32
         log_lvl_length = min(max(int(column_length*0.03), 1), 8)
         s1 = '{}.{}s '.format(log_lvl_length, log_lvl_length)
         column_length -= log_lvl_length
@@ -283,7 +285,7 @@ def make_logger(logger_name, max_indent=4):
         max_msg_length = column_length - module_length - lineno_length - func_name_length
         s5 = '-{}.{}s'.format(max_msg_length, max_msg_length)
 
-        fmt_str = Fore.CYAN+'%(asctime)s '+Fore.LIGHTGREEN_EX+'%(levelname)'+s1+Fore.LIGHTYELLOW_EX+'['+Fore.BLUE+'%(module)'+s2+Fore.YELLOW+'('+Fore.LIGHTBLUE_EX+'%(lineno)'+s3+Fore.YELLOW+'):'+Fore.LIGHTMAGENTA_EX+'%(funcName)'+s4+Fore.LIGHTYELLOW_EX+'] '+Fore.LIGHTWHITE_EX+'%(message)'+s5+Fore.RESET
+        fmt_str = Fore.CYAN+'%(asctime)s '+Fore.LIGHTGREEN_EX+'%(levelname)'+s1+Fore.LIGHTYELLOW_EX+'['+Fore.BLUE+'%(module)'+s2+Fore.YELLOW+'|'+Fore.LIGHTBLUE_EX+'%(lineno)'+s3+Fore.YELLOW+':'+Fore.LIGHTMAGENTA_EX+'%(funcName)'+s4+Fore.LIGHTYELLOW_EX+'] '+Fore.LIGHTWHITE_EX+'%(message)'+s5+Fore.RESET
         std_handler.setFormatter(Formatter(fmt_str))
 
         logger.logger.addHandler(std_handler)

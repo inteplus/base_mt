@@ -16,40 +16,44 @@ from os.path import *
 from glob import glob
 from basemt import logger
 
+_path_lock = _th.Lock()
+
 def remove(path):
     '''Removes a path completely, regardless of it being a file or a folder. If the path does not exist, do nothing.'''
-    if islink(path):
-        _os.unlink(path)
-    elif isfile(path):
-        _os.remove(path)
-    elif isdir(path):
-        try:
-            _su.rmtree(path)
-        except OSError as e:
-            if _pl.system() == 'Windows':
-                pass # this can sometimes fail on Windows
-            raise e
+    with _path_lock:
+        if islink(path):
+            _os.unlink(path)
+        elif isfile(path):
+            _os.remove(path)
+        elif isdir(path):
+            try:
+                _su.rmtree(path)
+            except OSError as e:
+                if _pl.system() == 'Windows':
+                    pass # this can sometimes fail on Windows
+                raise e
 
 def make_dirs(path, shared=True):
     '''Convenient invocation of `os.makedirs(path, exist_ok=True)`. If `shared` is True, every newly created folder will have permission 0o775.'''
     if not path: # empty path, just ignore
         return
-    if shared:
-        stack = []
-        while not exists(path):
-            head, tail = split(path)
-            stack.append(tail)
-            if path == head:
-                raise RuntimeError("Unable to parse path={}".format(path))
-            else:
-                path = head
-        while stack:
-            tail = stack.pop()
-            path = join(path, tail)
-            _os.mkdir(path, 0o775)
-            _os.chmod(path, mode=0o775)
-    else:
-        _os.makedirs(path, mode=0o775, exist_ok=True)
+    with _path_lock:
+        if shared:
+            stack = []
+            while not exists(path):
+                head, tail = split(path)
+                stack.append(tail)
+                if path == head:
+                    raise RuntimeError("Unable to parse path={}".format(path))
+                else:
+                    path = head
+            while stack:
+                tail = stack.pop()
+                path = join(path, tail)
+                _os.mkdir(path, 0o775)
+                _os.chmod(path, mode=0o775)
+        else:
+            _os.makedirs(path, mode=0o775, exist_ok=True)
 
 
 def lock(path, to_write=False):

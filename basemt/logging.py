@@ -7,6 +7,7 @@ import os as _os
 import os.path as _op
 import basemt.traceback as _tb
 import tempfile as _tf
+import getpass as _gp
 from colorama import Fore, Style
 from colorama import init as _colorama_init
 _colorama_init()
@@ -323,7 +324,7 @@ def init():
     setattr(init, '_home_dirpath', _op.join(_op.expanduser('~'), '.basemt'))
     _os.makedirs(init._home_dirpath, exist_ok=True)
 
-    temp_dirpath = _op.join(_tf.gettempdir(), '.basemt')
+    temp_dirpath = _op.join(_tf.gettempdir(), _gp.getuser(), '.basemt')
     _os.makedirs(temp_dirpath, exist_ok=True)
     setattr(init, '_temp_dirpath', temp_dirpath)
 

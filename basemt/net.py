@@ -2,6 +2,7 @@ import socket as _s
 import psutil as _p
 import getpass as _getpass
 import threading as _t
+from time import sleep
 
 
 def is_port_open(addr, port, timeout=2.0):
@@ -51,7 +52,7 @@ def get_all_inet4_ipaddresses():
 def _pf_forward(source, destination):
     string = ' '
     while string:
-        string = source.recv(1024)
+        string = source.recv(4096)
         if string:
             destination.sendall(string)
         else:
@@ -96,6 +97,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
                 if logger:
                     logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(client_addr, listen_config), file=sys.stderr)
     finally:
+        sleep(5)
         _t.Thread(target=_pf_server, args=(listen_config, connect_configs), kwargs={'logger': logger}).start()
 
 

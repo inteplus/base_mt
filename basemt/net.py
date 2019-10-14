@@ -52,7 +52,7 @@ def get_all_inet4_ipaddresses():
 def _pf_forward(source, destination):
     string = ' '
     while string:
-        string = source.recv(4096)
+        string = source.recv(1024)
         if string:
             destination.sendall(string)
         else:

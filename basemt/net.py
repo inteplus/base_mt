@@ -95,7 +95,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
                     continue
             else:
                 if logger:
-                    logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(client_addr, listen_config), file=sys.stderr)
+                    logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(client_addr, listen_config))
     finally:
         sleep(5)
         _t.Thread(target=_pf_server, args=(listen_config, connect_configs), kwargs={'logger': logger}).start()

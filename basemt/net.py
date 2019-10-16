@@ -12,7 +12,7 @@ def is_port_open(addr, port, timeout=2.0):
         sock = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
         sock.settimeout(timeout)
         result = sock.connect_ex((addr, port))
-        return result==0
+        return result == 0
     except:
         return False
 
@@ -49,10 +49,20 @@ def get_all_inet4_ipaddresses():
 # ----- port forwarding -----
 
 
-def _pf_forward(source, destination):
+def _pf_forward(source, destination, src_config=None, dst_config=None, logger=None):
     string = ' '
     while string:
-        string = source.recv(1024)
+        try:
+            string = source.recv(1024)
+        except _s.timeout as e:
+            if logger:
+                logger.warning(
+                    "Disconnecting the '{}->{}' connection as the source has timed out.".format(src_config, dst_config))
+                logger.warn_last_exception()
+            destination.shutdown(_s.SHUT_WR)
+            source.shutdown(_s.SHUT_RD)
+            break
+
         if string:
             destination.sendall(string)
         else:
@@ -71,35 +81,45 @@ def _pf_server(listen_config, connect_configs, logger=None):
 
         while True:
             client_socket, client_addr = dock_socket.accept()
-            client_socket.settimeout(10) # let's be patient
+            client_socket.settimeout(10)  # let's be patient
             if logger:
-                logger.info("Client '{}' connected to '{}'.".format(client_addr, listen_config))
+                logger.info("Client '{}' connected to '{}'.".format(
+                    client_addr, listen_config))
 
             for connect_config in connect_configs:
                 try:
                     server_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
-                    server_socket.settimeout(10) # listen for 10 seconds before going to the next
+                    # listen for 10 seconds before going to the next
+                    server_socket.settimeout(10)
                     connect_params = connect_config.split(':')
-                    result = server_socket.connect_ex((connect_params[0], int(connect_params[1])))
+                    result = server_socket.connect_ex(
+                        (connect_params[0], int(connect_params[1])))
                     if result != 0:
                         if logger:
-                            logger.warning("Forward-connecting '{}' to '{}' returned {} instead of 0.".format(client_addr, connect_config, result))
+                            logger.warning("Forward-connecting '{}' to '{}' returned {} instead of 0.".format(
+                                client_addr, connect_config, result))
                         continue
                     if logger:
-                        logger.info("Client '{}' forwarded to '{}'.".format(client_addr, connect_config))
-                    _t.Thread(target=_pf_forward, args=(client_socket, server_socket)).start()
-                    _t.Thread(target=_pf_forward, args=(server_socket, client_socket)).start()
+                        logger.info("Client '{}' forwarded to '{}'.".format(
+                            client_addr, connect_config))
+                    _t.Thread(target=_pf_forward, args=(client_socket, server_socket), kwargs={
+                              'logger': logger, 'src_config': listen_config, 'dst_config': connect_config}).start()
+                    _t.Thread(target=_pf_forward, args=(server_socket, client_socket), kwargs={
+                              'logger': logger, 'src_config': connect_config, 'dst_config': listen_config}).start()
                     break
                 except:
                     if logger:
-                        logger.warning("Unable to forward '{}' to '{}'. Skipping to next server.".format(client_addr, connect_config))
+                        logger.warning("Unable to forward '{}' to '{}'. Skipping to next server.".format(
+                            client_addr, connect_config))
                     continue
             else:
                 if logger:
-                    logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(client_addr, listen_config))
+                    logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(
+                        client_addr, listen_config))
     finally:
         sleep(5)
-        _t.Thread(target=_pf_server, args=(listen_config, connect_configs), kwargs={'logger': logger}).start()
+        _t.Thread(target=_pf_server, args=(listen_config,
+                                           connect_configs), kwargs={'logger': logger}).start()
 
 
 def launch_port_forwarder(listen_config, connect_configs, logger=None):
@@ -114,4 +134,5 @@ def launch_port_forwarder(listen_config, connect_configs, logger=None):
     logger : logging.Logger or equivalent
         for logging messages
     '''
-    _t.Thread(target=_pf_server, args=(listen_config, connect_configs), kwargs={'logger': logger}).start()
+    _t.Thread(target=_pf_server, args=(listen_config, connect_configs),
+              kwargs={'logger': logger}).start()

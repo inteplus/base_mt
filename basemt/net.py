@@ -71,6 +71,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
 
         while True:
             client_socket, client_addr = dock_socket.accept()
+            client_socket.settimeout(10) # let's be patient
             if logger:
                 logger.info("Client '{}' connected to '{}'.".format(client_addr, listen_config))
 

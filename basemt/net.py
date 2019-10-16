@@ -49,6 +49,30 @@ def get_all_inet4_ipaddresses():
 # ----- port forwarding -----
 
 
+def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
+    """Set TCP keepalive on an open socket.
+
+    It activates after 1 second (after_idle_sec) of idleness,
+    then sends a keepalive ping once every 3 seconds (interval_sec),
+    and closes the connection after 5 failed ping (max_fails), or 15 seconds
+    """
+    sock.setsockopt(_s.SOL_SOCKET, _s.SO_KEEPALIVE, 1)
+    sock.setsockopt(_s.IPPROTO_TCP, _s.TCP_KEEPIDLE, after_idle_sec)
+    sock.setsockopt(_s.IPPROTO_TCP, _s.TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(_s.IPPROTO_TCP, _s.TCP_KEEPCNT, max_fails)
+
+
+def set_keepalive_osx(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
+    """Set TCP keepalive on an open socket.
+
+    sends a keepalive ping once every 3 seconds (interval_sec)
+    """
+    # scraped from /usr/include, not exported by python's socket module
+    TCP_KEEPALIVE = 0x10
+    sock.setsockopt(_s.SOL_SOCKET, _s.SO_KEEPALIVE, 1)
+    sock.setsockopt(_s.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
+
+
 def _pf_forward(source, destination, src_config=None, dst_config=None, logger=None):
     string = ' '
     while string:
@@ -82,6 +106,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
         while True:
             client_socket, client_addr = dock_socket.accept()
             client_socket.settimeout(10)  # let's be patient
+            set_keepalive_linux(client_socket)  # and keep it alive
             if logger:
                 logger.info("Client '{}' connected to '{}'.".format(
                     client_addr, listen_config))
@@ -91,6 +116,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
                     server_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
                     # listen for 10 seconds before going to the next
                     server_socket.settimeout(10)
+                    set_keepalive_linux(server_socket)  # and keep it alive
                     connect_params = connect_config.split(':')
                     result = server_socket.connect_ex(
                         (connect_params[0], int(connect_params[1])))

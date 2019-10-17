@@ -73,7 +73,7 @@ def set_keepalive_osx(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
     sock.setsockopt(_s.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
 
 
-def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, dst_config=None, logger=None):
+def _pf_forward(source, destination, src_config=None, dst_config=None, logger=None):
     string = ' '
     while string:
         try:
@@ -81,7 +81,7 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
         except _s.timeout as e:
             if logger:
                 logger.warn_last_exception()
-            if close_upon_timeout:
+            if timeout:
                 if logger:
                     logger.warning(
                         "Shutting down the '{}->{}' stream as the source has timed out.".format(src_config, dst_config))
@@ -90,7 +90,7 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
             else:
                 if logger:
                     logger.warning(
-                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config)) 
+                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config))
                 destination.shutdown(_s.SHUT_RDWR)
                 source.shutdown(_s.SHUT_RDWR)
                 destination.close()
@@ -111,7 +111,7 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
             destination.shutdown(_s.SHUT_WR)
 
 
-def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=None):
+def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
     try:
         while True:
             try:
@@ -132,14 +132,14 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                     logger.warn_last_exception()
                 dock_socket.close()
                 sleep(5)
-            
+
         if logger:
             logger.info("Listening at '{}'.".format(listen_config))
 
         while True:
             client_socket, client_addr = dock_socket.accept()
-            client_socket.settimeout(60)  # let's be patient
-            set_keepalive_linux(client_socket)  # and keep it alive
+            client_socket.settimeout(timeout)
+            set_keepalive_linux(client_socket)  # keep it alive
             if logger:
                 logger.info("Client '{}' connected to '{}'.".format(
                     client_addr, listen_config))
@@ -148,8 +148,7 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                 try:
                     server_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
                     # listen for 10 seconds before going to the next
-                    server_socket.settimeout(60)
-                    set_keepalive_linux(server_socket)  # and keep it alive
+                    server_socket.settimeout(10)
                     connect_params = connect_config.split(':')
                     result = server_socket.connect_ex(
                         (connect_params[0], int(connect_params[1])))
@@ -161,13 +160,13 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                     if logger:
                         logger.info("Client '{}' forwarded to '{}'.".format(
                             client_addr, connect_config))
+                    server_socket.settimeout(timeout)
+                    set_keepalive_linux(server_socket)  # keep it alive
                     _t.Thread(target=_pf_forward, args=(client_socket, server_socket), kwargs={
-                        'close_upon_timeout': close_upon_timeout,
                         'logger': logger,
                         'src_config': listen_config,
                         'dst_config': connect_config}).start()
                     _t.Thread(target=_pf_forward, args=(server_socket, client_socket), kwargs={
-                        'close_upon_timeout': close_upon_timeout,
                         'logger': logger,
                         'src_config': connect_config,
                         'dst_config': listen_config}).start()
@@ -182,12 +181,15 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                     logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(
                         client_addr, listen_config))
     finally:
-        sleep(60)
+        if logger:
+            logger.info(
+                "Waiting for 10 seconds before restarting the listener...")
+        sleep(10)
         _t.Thread(target=_pf_server, args=(listen_config,
                                            connect_configs), kwargs={'logger': logger}).start()
 
 
-def launch_port_forwarder(listen_config, connect_configs, close_upon_timeout=False, logger=None):
+def launch_port_forwarder(listen_config, connect_configs, timeout=30, logger=None):
     '''Launchs in other threads a port forwarding service.
 
     Parameters
@@ -196,10 +198,10 @@ def launch_port_forwarder(listen_config, connect_configs, close_upon_timeout=Fal
         listening config as an 'addr:port' pair. For example, ':30443', '0.0.0.0:324', 'localhost:345', etc.
     connect_configs : iterable
         list of connecting configs, each of which is an 'addr:port' pair. For example, 'www.foomum.com:443', etc.
-    close_upon_timeout : bool
-        whether to close the connection upon timeout or just the timed out stream
+    timeout : int
+        number of seconds for connection timeout
     logger : logging.Logger or equivalent
         for logging messages
     '''
     _t.Thread(target=_pf_server, args=(listen_config, connect_configs),
-              kwargs={'close_upon_timeout': close_upon_timeout, 'logger': logger}).start()
+              kwargs={'timeout': timeout, 'logger': logger}).start()

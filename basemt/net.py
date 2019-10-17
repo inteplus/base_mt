@@ -73,18 +73,26 @@ def set_keepalive_osx(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
     sock.setsockopt(_s.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
 
 
-def _pf_forward(source, destination, src_config=None, dst_config=None, logger=None):
+def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, dst_config=None, logger=None):
     string = ' '
     while string:
         try:
             string = source.recv(1024)
         except _s.timeout as e:
             if logger:
-                logger.warning(
-                    "Disconnecting the '{}->{}' connection as the source has timed out.".format(src_config, dst_config))
                 logger.warn_last_exception()
-            destination.shutdown(_s.SHUT_WR)
-            source.shutdown(_s.SHUT_RD)
+            if close_upon_timeout:
+                if logger:
+                    logger.warning(
+                        "Shutting down the '{}->{}' stream as the source has timed out.".format(src_config, dst_config))
+                destination.shutdown(_s.SHUT_WR)
+                source.shutdown(_s.SHUT_RD)
+            else:
+                if logger:
+                    logger.warning(
+                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config))
+                destination.close()
+                source.close()
             break
 
         if string:
@@ -94,7 +102,7 @@ def _pf_forward(source, destination, src_config=None, dst_config=None, logger=No
             destination.shutdown(_s.SHUT_WR)
 
 
-def _pf_server(listen_config, connect_configs, logger=None):
+def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=None):
     try:
         dock_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
         listen_params = listen_config.split(':')
@@ -129,9 +137,15 @@ def _pf_server(listen_config, connect_configs, logger=None):
                         logger.info("Client '{}' forwarded to '{}'.".format(
                             client_addr, connect_config))
                     _t.Thread(target=_pf_forward, args=(client_socket, server_socket), kwargs={
-                              'logger': logger, 'src_config': listen_config, 'dst_config': connect_config}).start()
+                        'close_upon_timeout': close_upon_timeout,
+                        'logger': logger,
+                        'src_config': listen_config,
+                        'dst_config': connect_config}).start()
                     _t.Thread(target=_pf_forward, args=(server_socket, client_socket), kwargs={
-                              'logger': logger, 'src_config': connect_config, 'dst_config': listen_config}).start()
+                        'close_upon_timeout': close_upon_timeout,
+                        'logger': logger,
+                        'src_config': connect_config,
+                        'dst_config': listen_config}).start()
                     break
                 except:
                     if logger:
@@ -148,7 +162,7 @@ def _pf_server(listen_config, connect_configs, logger=None):
                                            connect_configs), kwargs={'logger': logger}).start()
 
 
-def launch_port_forwarder(listen_config, connect_configs, logger=None):
+def launch_port_forwarder(listen_config, connect_configs, close_upon_timeout=False, logger=None):
     '''Launchs in other threads a port forwarding service.
 
     Parameters
@@ -157,8 +171,10 @@ def launch_port_forwarder(listen_config, connect_configs, logger=None):
         listening config as an 'addr:port' pair. For example, ':30443', '0.0.0.0:324', 'localhost:345', etc.
     connect_configs : iterable
         list of connecting configs, each of which is an 'addr:port' pair. For example, 'www.foomum.com:443', etc.
+    close_upon_timeout : bool
+        whether to close the connection upon timeout or just the timed out stream
     logger : logging.Logger or equivalent
         for logging messages
     '''
     _t.Thread(target=_pf_server, args=(listen_config, connect_configs),
-              kwargs={'logger': logger}).start()
+              kwargs={'close_upon_timeout': close_upon_timeout, 'logger': logger}).start()

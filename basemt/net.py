@@ -90,7 +90,9 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
             else:
                 if logger:
                     logger.warning(
-                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config))
+                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config)) 
+                destination.shutdown(_s.SHUT_RDWR)
+                source.shutdown(_s.SHUT_RDWR)
                 destination.close()
                 source.close()
             break

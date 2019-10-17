@@ -138,7 +138,7 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
 
         while True:
             client_socket, client_addr = dock_socket.accept()
-            client_socket.settimeout(10)  # let's be patient
+            client_socket.settimeout(60)  # let's be patient
             set_keepalive_linux(client_socket)  # and keep it alive
             if logger:
                 logger.info("Client '{}' connected to '{}'.".format(
@@ -148,7 +148,7 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                 try:
                     server_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
                     # listen for 10 seconds before going to the next
-                    server_socket.settimeout(10)
+                    server_socket.settimeout(60)
                     set_keepalive_linux(server_socket)  # and keep it alive
                     connect_params = connect_config.split(':')
                     result = server_socket.connect_ex(

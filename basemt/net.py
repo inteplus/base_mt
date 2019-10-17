@@ -106,10 +106,26 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
 
 def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=None):
     try:
-        dock_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
-        listen_params = listen_config.split(':')
-        dock_socket.bind((listen_params[0], int(listen_params[1])))
-        dock_socket.listen(5)
+        while True:
+            try:
+                dock_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
+            except OSError:
+                if logger:
+                    logger.warn_last_exception()
+                sleep(5)
+                continue
+
+            try:
+                listen_params = listen_config.split(':')
+                dock_socket.bind((listen_params[0], int(listen_params[1])))
+                dock_socket.listen(5)
+                break
+            except OSError:
+                if logger:
+                    logger.warn_last_exception()
+                dock_socket.close()
+                sleep(5)
+            
         if logger:
             logger.info("Listening at '{}'.".format(listen_config))
 
@@ -159,7 +175,7 @@ def _pf_server(listen_config, connect_configs, close_upon_timeout=False, logger=
                     logger.error("Unable to forward to any server for client '{}' connected to '{}'.".format(
                         client_addr, listen_config))
     finally:
-        sleep(5)
+        sleep(60)
         _t.Thread(target=_pf_server, args=(listen_config,
                                            connect_configs), kwargs={'logger': logger}).start()
 

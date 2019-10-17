@@ -96,6 +96,13 @@ def _pf_forward(source, destination, close_upon_timeout=False, src_config=None, 
                 destination.close()
                 source.close()
             break
+        except OSError:
+            if logger:
+                logger.warn_last_exception()
+            destination.shutdown(_s.SHUT_RDWR)
+            source.shutdown(_s.SHUT_RDWR)
+            destination.close()
+            source.close()
 
         if string:
             destination.sendall(string)

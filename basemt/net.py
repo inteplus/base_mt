@@ -283,22 +283,29 @@ def _pf_tunnel_server(listen_config, ssh_tunnel_forwarder, timeout=30, logger=No
 
         class Watcher(object):
 
-            def __init__(self, ssh_tunnel_forwarder):
+            def __init__(self, ssh_tunnel_forwarder, logger=None):
                 self.base = ssh_tunnel_forwarder
+                self.logger = logger
                 self.num_conns = 0
 
             def inc(self):
                 if self.num_conns == 0:
                     if not self.base.is_alive:
+                        if self.logger:
+                            self.logger.debug("Activating SSH tunnel '{}'.".format(
+                                self.base._remote_binds))
                         self.base.start()
                 self.num_conns += 1
 
             def __call__(self):
                 self.num_conns -= 1
                 if self.num_conns == 0:
+                    if self.logger:
+                        self.logger.debug("Deactivating SSH tunnel '{}'.".format(
+                            self.base._remote_binds))
                     self.base.stop()
 
-        watcher = Watcher(ssh_tunnel_forwarder)
+        watcher = Watcher(ssh_tunnel_forwarder, logger=logger)
 
         while True:
             client_socket, client_addr = dock_socket.accept()

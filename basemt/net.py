@@ -109,6 +109,11 @@ def _pf_shutdown_stream(connection, is_c2s):
             _pf_shutdown_socket(
                 connection['client_socket'], _s.SHUT_WR, config=connection['client_config'], logger=logger)
 
+    if connection['c2s_stream'] is False and connection['s2c_stream'] is False and not connection['closed']:
+        connection['closed'] = True
+        if 'closed_callback' in connection:
+            connection['closed_callback']()
+
 
 def _pf_forward(connection, is_c2s):
     if is_c2s:
@@ -207,6 +212,7 @@ def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
                         'logger': logger,
                         'c2s_stream': True,
                         's2c_stream': True,
+                        'closed': False,
                     }
                     _t.Thread(target=_pf_forward, args=(
                         connection, True)).start()
@@ -247,4 +253,130 @@ def launch_port_forwarder(listen_config, connect_configs, timeout=30, logger=Non
         for logging messages
     '''
     _t.Thread(target=_pf_server, args=(listen_config, connect_configs),
+              kwargs={'timeout': timeout, 'logger': logger}).start()
+
+
+def _pf_tunnel_server(listen_config, ssh_tunnel_forwarder, timeout=30, logger=None):
+    try:
+        while True:
+            try:
+                dock_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
+            except OSError:
+                if logger:
+                    logger.warn_last_exception()
+                sleep(5)
+                continue
+
+            try:
+                listen_params = listen_config.split(':')
+                dock_socket.bind((listen_params[0], int(listen_params[1])))
+                dock_socket.listen(5)
+                break
+            except OSError:
+                if logger:
+                    logger.warn_last_exception()
+                dock_socket.close()
+                sleep(5)
+
+        if logger:
+            logger.info("Listening at '{}'.".format(listen_config))
+
+        class Watcher(object):
+
+            def __init__(self, ssh_tunnel_forwarder):
+                self.base = ssh_tunnel_forwarder
+                self.num_conns = 0
+
+            def inc(self):
+                if self.num_conns == 0:
+                    if not self.base.is_alive:
+                        self.base.start()
+                self.num_conns += 1
+
+            def __call__(self):
+                self.num_conns -= 1
+                if self.num_conns == 0:
+                    self.base.stop()
+
+        watcher = Watcher(ssh_tunnel_forwarder)
+
+        while True:
+            client_socket, client_addr = dock_socket.accept()
+            client_socket.settimeout(timeout)
+            set_keepalive_linux(client_socket)  # keep it alive
+            if logger:
+                logger.info("Client '{}' connected to '{}'.".format(
+                    client_addr, listen_config))
+
+            watcher.inc()
+
+            try:
+                server_socket = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
+                # listen for 10 seconds before going to the next
+                server_socket.settimeout(10)
+                result = server_socket.connect_ex(
+                    ('localhost', ssh_tunnel_forwarder.local_bind_port))
+                if result != 0:
+                    if logger:
+                        logger.warning("Forward-connecting '{}' to '{}' returned {} instead of 0.".format(
+                            client_addr, ssh_tunnel_forwarder._remote_binds, result))
+                    continue
+                if logger:
+                    logger.info("Client '{}' forwarded to '{}'.".format(
+                        client_addr, ssh_tunnel_forwarder._remote_binds))
+                server_socket.settimeout(timeout)
+                set_keepalive_linux(server_socket)  # keep it alive
+                connection = {
+                    'client_socket': client_socket,
+                    'server_socket': server_socket,
+                    'client_config': listen_config,
+                    'server_config': ssh_tunnel_forwarder._remote_binds,
+                    'logger': logger,
+                    'c2s_stream': True,
+                    's2c_stream': True,
+                    'closed': False,
+                    'closed_callback': watcher,
+                }
+                _t.Thread(target=_pf_forward, args=(
+                    connection, True)).start()
+                _t.Thread(target=_pf_forward, args=(
+                    connection, False)).start()
+            except:
+                if logger:
+                    logger.warn_last_exception()
+                    logger.warning("Unable to forward '{}' to '{}'.".format(
+                        client_addr, ssh_tunnel_forwarder._remote_binds))
+    finally:
+        if logger:
+            logger.warn_last_exception()
+            logger.info(
+                "Waiting for 10 seconds before restarting the listener...")
+        sleep(10)
+        _t.Thread(target=_pf_tunnel_server, args=(listen_config,
+                                                  ssh_tunnel_forwarder), kwargs={'timeout': timeout, 'logger': logger}).start()
+
+
+def launch_ssh_forwarder(listen_config, ssh_tunnel_forwarder, timeout=30, logger=None):
+    '''Launchs in other threads a port forwarding service via SSH tunnel.
+
+    Parameters
+    ----------
+    listen_config : str
+        listening config as an 'addr:port' pair. For example, ':30443', '0.0.0.0:324', 'localhost:345', etc.
+    ssh_tunnel_forwarder : sshtunnel.SSHTunnelForwarder
+        a stopped SSHTunnelForwarder instance
+    timeout : int
+        number of seconds for connection timeout
+    logger : logging.Logger or equivalent
+        for logging messages
+    '''
+    try:
+        import sshtunnel
+    except ImportError:
+        raise RuntimeError(
+            "Unable to import sshtunnel. Try installing it like using 'pip install sshtunnel'.")
+    if not isinstance(ssh_tunnel_forwarder, sshtunnel.SSHTunnelForwarder):
+        raise ValueError(
+            "The argument `ssh_tunnel_forwarder` is not an instance of sshtunnel.SSHTunnelForwarder.")
+    _t.Thread(target=_pf_tunnel_server, args=(listen_config, ssh_tunnel_forwarder),
               kwargs={'timeout': timeout, 'logger': logger}).start()

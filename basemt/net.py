@@ -92,22 +92,22 @@ def _pf_shutdown_stream(connection, is_c2s):
         if connection['c2s_stream']:
             connection['c2s_stream'] = False
             if logger:
-                logger.info("Shutting down stream client {} -> server {}".format(
+                logger.debug("Shutting down stream client {} -> server {}".format(
                     connection['client_config'], connection['server_config']))
             _pf_shutdown_socket(
-                connection['client_socket'], _s.SHUT_RD, logger=logger)
+                connection['client_socket'], _s.SHUT_RD, config=connection['client_config'], logger=logger)
             _pf_shutdown_socket(
-                connection['server_socket'], _s.SHUT_WR, logger=logger)
+                connection['server_socket'], _s.SHUT_WR, config=connection['server_config'], logger=logger)
     else:
         if connection['s2c_stream']:
             connection['s2c_stream'] = False
             if logger:
-                logger.info("Shutting down stream server {} -> client {}".format(
+                logger.debug("Shutting down stream server {} -> client {}".format(
                     connection['server_config'], connection['client_config']))
             _pf_shutdown_socket(
-                connection['server_socket'], _s.SHUT_RD, logger=logger)
+                connection['server_socket'], _s.SHUT_RD, config=connection['server_config'], logger=logger)
             _pf_shutdown_socket(
-                connection['client_socket'], _s.SHUT_WR, logger=logger)
+                connection['client_socket'], _s.SHUT_WR, config=connection['client_config'], logger=logger)
 
 
 def _pf_forward(connection, is_c2s):

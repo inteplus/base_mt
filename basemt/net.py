@@ -73,42 +73,79 @@ def set_keepalive_osx(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
     sock.setsockopt(_s.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
 
 
-def _pf_forward(source, destination, src_config=None, dst_config=None, logger=None):
+def _pf_shutdown_socket(socket, mode, config=None, logger=None):
+    try:
+        socket.shutdown(mode)
+        return True
+    except:
+        if logger:
+            logger.warn_last_exception()
+            logger.warning(
+                "Ignored the above exception when trying to shutdown socket '{}' with mode {}.".format(config, mode))
+        return False
+
+
+def _pf_shutdown_stream(connection, is_c2s):
+    '''Shuts down the client->server stream or the server->client stream.'''
+    logger = connection['logger']
+    if is_c2s:
+        if connection['c2s_stream']:
+            connection['c2s_stream'] = False
+            if logger:
+                logger.info("Shutting down stream client {} -> server {}".format(
+                    connection['client_config'], connection['server_config']))
+            _pf_shutdown_socket(
+                connection['client_socket'], _s.SHUT_RD, logger=logger)
+            _pf_shutdown_socket(
+                connection['server_socket'], _s.SHUT_WR, logger=logger)
+    else:
+        if connection['s2c_stream']:
+            connection['s2c_stream'] = False
+            if logger:
+                logger.info("Shutting down stream server {} -> client {}".format(
+                    connection['server_config'], connection['client_config']))
+            _pf_shutdown_socket(
+                connection['server_socket'], _s.SHUT_RD, logger=logger)
+            _pf_shutdown_socket(
+                connection['client_socket'], _s.SHUT_WR, logger=logger)
+
+
+def _pf_forward(connection, is_c2s):
+    if is_c2s:
+        src_socket = connection['client_socket']
+        dst_socket = connection['server_socket']
+    else:
+        src_socket = connection['server_socket']
+        dst_socket = connection['client_socket']
+    logger = connection['logger']
+
     string = ' '
     while string:
         try:
-            string = source.recv(1024)
-        except _s.timeout as e:
+            string = src_socket.recv(1024)
+        except _s.timeout:
             if logger:
                 logger.warn_last_exception()
-            if timeout:
-                if logger:
+                if is_c2s:
                     logger.warning(
-                        "Shutting down the '{}->{}' stream as the source has timed out.".format(src_config, dst_config))
-                destination.shutdown(_s.SHUT_WR)
-                source.shutdown(_s.SHUT_RD)
-            else:
-                if logger:
+                        "Stream client '{}' -> server '{}' has timed out.".format(connection['client_config'], connection['server_config']))
+                else:
                     logger.warning(
-                        "Closing '{}<->{}' connection as the source has timed out.".format(src_config, dst_config))
-                destination.shutdown(_s.SHUT_RDWR)
-                source.shutdown(_s.SHUT_RDWR)
-                destination.close()
-                source.close()
+                        "Stream server '{}' -> client '{}' has timed out.".format(connection['client_config'], connection['server_config']))
+
+                _pf_shutdown_stream(connection, is_c2s)
             break
         except OSError:
             if logger:
                 logger.warn_last_exception()
-            destination.shutdown(_s.SHUT_RDWR)
-            source.shutdown(_s.SHUT_RDWR)
-            destination.close()
-            source.close()
+            _pf_shutdown_stream(connection, is_c2s)
+            _pf_shutdown_stream(connection, not is_c2s)
+            break
 
         if string:
-            destination.sendall(string)
+            dst_socket.sendall(string)
         else:
-            source.shutdown(_s.SHUT_RD)
-            destination.shutdown(_s.SHUT_WR)
+            _pf_shutdown_stream(connection, is_c2s)
 
 
 def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
@@ -162,17 +199,23 @@ def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
                             client_addr, connect_config))
                     server_socket.settimeout(timeout)
                     set_keepalive_linux(server_socket)  # keep it alive
-                    _t.Thread(target=_pf_forward, args=(client_socket, server_socket), kwargs={
+                    connection = {
+                        'client_socket': client_socket,
+                        'server_socket': server_socket,
+                        'client_config': listen_config,
+                        'server_config': connect_config,
                         'logger': logger,
-                        'src_config': listen_config,
-                        'dst_config': connect_config}).start()
-                    _t.Thread(target=_pf_forward, args=(server_socket, client_socket), kwargs={
-                        'logger': logger,
-                        'src_config': connect_config,
-                        'dst_config': listen_config}).start()
+                        'c2s_stream': True,
+                        's2c_stream': True,
+                    }
+                    _t.Thread(target=_pf_forward, args=(
+                        connection, True)).start()
+                    _t.Thread(target=_pf_forward, args=(
+                        connection, False)).start()
                     break
                 except:
                     if logger:
+                        logger.warn_last_exception()
                         logger.warning("Unable to forward '{}' to '{}'. Skipping to next server.".format(
                             client_addr, connect_config))
                     continue

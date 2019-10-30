@@ -79,9 +79,9 @@ def _pf_shutdown_socket(socket, mode, config=None, logger=None):
         return True
     except:
         if logger:
-            logger.warn_last_exception()
-            logger.warning(
-                "Ignored the above exception when trying to shutdown socket '{}' with mode {}.".format(config, mode))
+            msg = "Shuting down socket '{}' with mode {}".format(config, mode)
+            with logger.scoped_warning(msg, curly=False):
+                logger.warn_last_exception()
         return False
 
 
@@ -130,19 +130,20 @@ def _pf_forward(connection, is_c2s):
             string = src_socket.recv(1024)
         except _s.timeout:
             if logger:
-                logger.warn_last_exception()
                 if is_c2s:
-                    logger.warning(
-                        "Stream client '{}' -> server '{}' has timed out.".format(connection['client_config'], connection['server_config']))
+                    msg = "Stream client '{}' -> server '{}' has timed out".format(connection['client_config'], connection['server_config'])
                 else:
-                    logger.warning(
-                        "Stream server '{}' -> client '{}' has timed out.".format(connection['client_config'], connection['server_config']))
+                    msg = "Stream server '{}' -> client '{}' has timed out".format(connection['client_config'], connection['server_config'])
+                with logger.scoped_warning(msg, curly=False):
+                    logger.warn_last_exception()
 
                 _pf_shutdown_stream(connection, is_c2s)
             break
         except OSError:
             if logger:
-                logger.warn_last_exception()
+                msg = "Broken connection client '{}' <-> server '{}'  because".format(connection['client_config'], connection['server_config'])
+                with logger.scoped_warning(msg, curly=False):
+                    logger.warn_last_exception()
             _pf_shutdown_stream(connection, is_c2s)
             _pf_shutdown_stream(connection, not is_c2s)
             break
@@ -238,6 +239,35 @@ def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
                                            connect_configs), kwargs={'logger': logger}).start()
 
 
+class SSHTunnelWatcher(object):
+
+    def __init__(self, ssh_tunnel_forwarder, logger=None):
+        self.base = ssh_tunnel_forwarder
+        self.logger = logger
+        self.num_conns = 0
+        self.lock = _t.Lock()
+
+    def inc(self):
+        with self.lock:
+            if self.num_conns == 0:
+                if not self.base.is_alive:
+                    if self.logger:
+                        self.logger.debug("Activating SSH tunnel '{}'.".format(
+                            self.base._remote_binds))
+                    self.base.start()
+            self.num_conns += 1
+
+    def __call__(self):
+        with self.lock:
+            self.num_conns -= 1
+            if self.num_conns == 0:
+                if self.logger:
+                    self.logger.debug("Deactivating SSH tunnel '{}'.".format(
+                        self.base._remote_binds))
+                self.base.stop()
+
+
+
 def launch_port_forwarder(listen_config, connect_configs, timeout=30, logger=None):
     '''Launchs in other threads a port forwarding service.
 
@@ -281,31 +311,7 @@ def _pf_tunnel_server(listen_config, ssh_tunnel_forwarder, timeout=30, logger=No
         if logger:
             logger.info("Listening at '{}'.".format(listen_config))
 
-        class Watcher(object):
-
-            def __init__(self, ssh_tunnel_forwarder, logger=None):
-                self.base = ssh_tunnel_forwarder
-                self.logger = logger
-                self.num_conns = 0
-
-            def inc(self):
-                if self.num_conns == 0:
-                    if not self.base.is_alive:
-                        if self.logger:
-                            self.logger.debug("Activating SSH tunnel '{}'.".format(
-                                self.base._remote_binds))
-                        self.base.start()
-                self.num_conns += 1
-
-            def __call__(self):
-                self.num_conns -= 1
-                if self.num_conns == 0:
-                    if self.logger:
-                        self.logger.debug("Deactivating SSH tunnel '{}'.".format(
-                            self.base._remote_binds))
-                    self.base.stop()
-
-        watcher = Watcher(ssh_tunnel_forwarder, logger=logger)
+        watcher = SSHTunnelWatcher(ssh_tunnel_forwarder, logger=logger)
 
         while True:
             client_socket, client_addr = dock_socket.accept()
@@ -350,9 +356,9 @@ def _pf_tunnel_server(listen_config, ssh_tunnel_forwarder, timeout=30, logger=No
                     connection, False)).start()
             except:
                 if logger:
-                    logger.warn_last_exception()
-                    logger.warning("Unable to forward '{}' to '{}'.".format(
-                        client_addr, ssh_tunnel_forwarder._remote_binds))
+                    msg = "Unable to forward '{}' to '{}'.".format(client_addr, ssh_tunnel_forwarder._remote_binds)
+                    with logger.scoped_warning(msg, curly=False):
+                        logger.warn_last_exception()
     finally:
         if logger:
             logger.warn_last_exception()

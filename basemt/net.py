@@ -3,6 +3,7 @@ import psutil as _p
 import getpass as _getpass
 import threading as _t
 from time import sleep
+from .logging import dummy_scope
 
 
 def is_port_open(addr, port, timeout=2.0):
@@ -91,23 +92,19 @@ def _pf_shutdown_stream(connection, is_c2s):
     if is_c2s:
         if connection['c2s_stream']:
             connection['c2s_stream'] = False
-            if logger:
-                logger.debug("Shutting down stream client {} -> server {}".format(
-                    connection['client_config'], connection['server_config']))
-            _pf_shutdown_socket(
-                connection['client_socket'], _s.SHUT_RD, config=connection['client_config'], logger=logger)
-            _pf_shutdown_socket(
-                connection['server_socket'], _s.SHUT_WR, config=connection['server_config'], logger=logger)
+            with logger.scoped_debug("Shutting down stream client {} -> server {}".format(connection['client_config'], connection['server_config']), curly=False) if logger else dummy_scope:
+                _pf_shutdown_socket(
+                    connection['client_socket'], _s.SHUT_RD, config=connection['client_config'], logger=logger)
+                _pf_shutdown_socket(
+                    connection['server_socket'], _s.SHUT_WR, config=connection['server_config'], logger=logger)
     else:
         if connection['s2c_stream']:
             connection['s2c_stream'] = False
-            if logger:
-                logger.debug("Shutting down stream server {} -> client {}".format(
-                    connection['server_config'], connection['client_config']))
-            _pf_shutdown_socket(
-                connection['server_socket'], _s.SHUT_RD, config=connection['server_config'], logger=logger)
-            _pf_shutdown_socket(
-                connection['client_socket'], _s.SHUT_WR, config=connection['client_config'], logger=logger)
+            with logger.scoped_debug("Shutting down stream server {} -> client {}".format(connection['server_config'], connection['client_config']), curly=False) if logger else dummy_scope:
+                _pf_shutdown_socket(
+                    connection['server_socket'], _s.SHUT_RD, config=connection['server_config'], logger=logger)
+                _pf_shutdown_socket(
+                    connection['client_socket'], _s.SHUT_WR, config=connection['client_config'], logger=logger)
 
     if connection['c2s_stream'] is False and connection['s2c_stream'] is False and not connection['closed']:
         connection['closed'] = True

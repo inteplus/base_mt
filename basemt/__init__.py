@@ -1,3 +1,4 @@
+from basemt.logging import dummy_scope
 import basemt.logging as _log
 
 logger = _log.make_logger("basemt")

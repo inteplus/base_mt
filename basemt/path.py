@@ -42,10 +42,13 @@ def make_dirs(path, shared=True):
             stack = []
             while not exists(path):
                 head, tail = split(path)
-                stack.append(tail)
-                if path == head:
-                    raise RuntimeError("Unable to parse path={}".format(path))
-                else:
+                if not head: # no slash in path
+                    stack.append(tail)
+                    path = '.'
+                elif not tail: # slash at the end of path
+                    path = head
+                else: # normal case
+                    stack.append(tail)
                     path = head
             while stack:
                 tail = stack.pop()

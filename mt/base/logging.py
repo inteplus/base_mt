@@ -11,7 +11,7 @@ from colorama import Fore, Style
 from colorama import init as _colorama_init
 _colorama_init()
 
-from .traceback import format_exc_info as _tb_format_exc_info, format_list as _tb_format_list, extract_stack as _tb_extract_stack
+from .traceback import format_exc_info as _tb_format_exc_info, format_list as _tb_format_list, extract_stack as _tb_extract_stack, extract_stack_compact as _tb_extract_stack_compact
 
 
 class DummyScopeForWithStatement(object):
@@ -208,7 +208,11 @@ class IndentedLoggerAdapter(LoggerAdapter):
         new_module : str
             short string representing the new module
         '''
-        self.warn("Import warning: module '{}' has been deprecated. Please use module '{}' instead.".format(old_module, new_module))
+        self.warn("IMPORT: module '{}' has been deprecated. Please use module '{}' instead.".format(old_module, new_module))
+        lines = _tb_extract_stack_compact()
+        if len(lines) > 9:
+            for x in lines[-9:-7]:
+                self.warn(x)
 
     def debug_call_stack(self):
         lines = _tb_format_list(_tb_extract_stack())

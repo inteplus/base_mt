@@ -1,15 +1,23 @@
-.. basemt documentation master file, created by
-   sphinx-quickstart on Mon May 18 11:34:30 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to basemt's documentation!
 ==================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
+.. autosummary::
+   :toctree: _autosummary
+
+   mt.base
+   mt.base.bg_invoke
+   mt.base.concurrency
+   mt.base.download_http
+   mt.base.logging
+   mt.base.net
+   mt.base.path
+   mt.base.pyximportcpp
+   mt.base.str
+   mt.base.threading
+   mt.base.traceback
+   mt.base.version
 
 
 Indices and tables

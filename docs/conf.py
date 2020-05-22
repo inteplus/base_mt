@@ -31,10 +31,15 @@ release = '0.3.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'autoapi.extension'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.inheritance_diagram',
+    'autoapi.sphinx'
 ]
 
-autoapi_dirs = ['../mt']
+autoapi_modules = {
+    'basemt': None,
+    'mt.base': None,
+    }
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

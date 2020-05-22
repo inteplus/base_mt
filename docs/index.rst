@@ -7,9 +7,10 @@ Welcome to basemt's documentation!
 ==================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :hidden:
 
+   basemt/basemt
+   mt.base/mt.base
 
 
 Indices and tables

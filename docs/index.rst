@@ -9,9 +9,11 @@ Welcome to basemt's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+	     
+   autoapi/mt/base/index
+   autoapi/basemt/index
 
-
-
+   
 Indices and tables
 ==================
 

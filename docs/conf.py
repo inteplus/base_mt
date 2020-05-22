@@ -22,7 +22,7 @@ copyright = '2020, Minh-Tri Pham'
 author = 'Minh-Tri Pham'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.0'
+release = '0.3.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,15 +31,12 @@ release = '0.3.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.inheritance_diagram',
-    'autoapi.sphinx'
+    'autoapi.extension'
 ]
 
-autoapi_modules = {
-    'basemt': None,
-    'mt.base': None,
-    }
+# sphinx-autoapi
+autoapi_dirs = ["../mt", "../basemt"]
+autoapi_python_use_implicit_namespaces = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -7,11 +7,7 @@ setup(name='basemt',
       version=version,
       description="The most fundamental Python modules for Minh-Tri Pham",
       author=["Minh-Tri Pham"],
-      packages=find_packages(where='src') + find_namespace_packages(include=['mt.*'], where='src'),
-      package_dir={
-          'basemt': 'src/basemt',
-          'mt.base': 'src/mt/base',
-      },
+      packages=find_packages() + find_namespace_packages(include=['mt.*']),
       install_requires=[
           'colorama',  # for colored text
           'Cython',  # for fast speed on tiny objects

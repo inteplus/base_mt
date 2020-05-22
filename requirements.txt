@@ -1,2 +1,6 @@
 sphinx-autoapi
-sphinx_rtd_theme
+sphinx-rtd-theme
+colorama
+Cython
+dask[distributed]
+

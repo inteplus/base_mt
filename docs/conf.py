@@ -38,6 +38,8 @@ extensions = [
 autoapi_dirs = ["../mt", "../basemt"]
 autoapi_python_use_implicit_namespaces = True
 
+master_doc = 'index'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -22,16 +22,20 @@ copyright = '2020, Minh-Tri Pham'
 author = 'Minh-Tri Pham'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.1'
+from mt.base.version import version
+release = version
 
 
 # -- General configuration ---------------------------------------------------
+
+import sphinx_rtd_theme
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'autoapi.extension'
+    'autoapi.extension',
+    'sphinx_rtd_theme',
 ]
 
 # sphinx-autoapi
@@ -39,6 +43,8 @@ autoapi_dirs = ["../mt", "../basemt"]
 autoapi_python_use_implicit_namespaces = True
 
 master_doc = 'index'
+
+html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

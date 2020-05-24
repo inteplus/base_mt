@@ -9,7 +9,9 @@ Welcome to basemt's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-	     
+
+
+   install	     
    autoapi/mt/base/index
    autoapi/basemt/index
 

@@ -7,7 +7,22 @@ from .logging import dummy_scope
 
 
 def is_port_open(addr, port, timeout=2.0):
-    '''Checks if a port is open, with timeout.'''
+    '''Checks if a port is open, with timeout.
+
+    Parameters
+    ----------
+    addr : str
+        ip address, hostname or fqdn
+    port : int
+        port number
+    time_out : float
+        timeout in seconds
+    
+    Returns
+    -------
+    bool
+        whether or not the port at the given address is open
+    '''
 
     try:
         sock = _s.socket(_s.AF_INET, _s.SOCK_STREAM)
@@ -24,7 +39,13 @@ def get_hostname():
 
 
 def get_username():
-    '''Returns the current username.'''
+    '''Returns the current username.
+
+    Returns
+    -------
+    str
+        the current username
+    '''
     return _getpass.getuser()
 
 
@@ -33,8 +54,8 @@ def get_all_inet4_ipaddresses():
 
     Returns
     -------
-        retval : dict
-            A dictionary of interface_name -> (ip_address, submask)
+    dict
+        A dictionary of interface_name -> (ip_address, submask)
     '''
     retval1 = _p.net_if_addrs()
     retval2 = {}

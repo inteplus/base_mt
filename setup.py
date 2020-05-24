@@ -9,6 +9,7 @@ setup(name='basemt',
       author=["Minh-Tri Pham"],
       packages=find_packages() + find_namespace_packages(include=['mt.*']),
       install_requires=[
+          'psutil',
           'colorama',  # for colored text
           'Cython',  # for fast speed on tiny objects
           'dask[distributed]',  # for simple multiprocessing jobs

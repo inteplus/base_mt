@@ -116,7 +116,7 @@ def parallelise(func, num_jobs, *fn_args, num_threads=None, bg_exception='raise'
     -----
         use this function instead of joblib if you want to integrate with mt.base.logging and BgException better
     '''
-    if not isinstance(num_jobs) or num_jobs <= 0:
+    if not isinstance(num_jobs, int) or num_jobs <= 0:
         raise ValueError("A positive integer is expected for argument 'num_jobs', but was given {}.".format(num_jobs))
 
     if pass_logger:
@@ -134,9 +134,9 @@ def parallelise(func, num_jobs, *fn_args, num_threads=None, bg_exception='raise'
             if i < num_jobs: # still has a job to execute
                 if len(threads) < max_num_conns:
                     if logger is not None and i % 1000 == 0:
-                        logger.info("Job {}/{}.".format(i+1, num_jobs))
+                        logger.info("Job {}/{}...".format(i+1, num_jobs))
                     # send the job to the thread
-                    threads[i] = _bb.BgInvoke(func, i, *fn_args, **fn_kwargs)
+                    threads[i] = BgInvoke(func, i, *fn_args, **fn_kwargs)
                     i += 1
                 else:
                     sleep(1)
@@ -158,8 +158,7 @@ def parallelise(func, num_jobs, *fn_args, num_threads=None, bg_exception='raise'
                     if bg_exception == 'raise':
                         raise
                     elif bg_exception == 'warn':
-                        if logger:
-                            logger.warn("Intercepted an exception from job {}".format(i2))
+                        with logger.scoped_warning("Caught an exception from job {}:".format(i2), curly=False) if logger else dummy_scope:
                             logger.warn_last_exception()
                     else:
                         raise ValueError("Argument 'bg_exception' has an unknown value '{}'.".format(bg_exception))

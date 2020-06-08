@@ -214,6 +214,22 @@ class IndentedLoggerAdapter(LoggerAdapter):
             for x in lines[-9:-7]:
                 self.warn(x)
 
+    def warn_func_move(self, old_func, new_func):
+        '''Warns that an old function has been moved to a new func.
+
+        Parameters
+        ----------
+        old_func : str
+            short string representing the old function
+        new_func : str
+            short string representing the new function
+        '''
+        self.warn("IMPORT: function '{}()' has been deprecated. Please use function '{}()' instead.".format(old_func, new_func))
+        lines = _tb_extract_stack_compact()
+        if len(lines) > 9:
+            for x in lines[-9:-7]:
+                self.warn(x)
+
     def debug_call_stack(self):
         lines = _tb_format_list(_tb_extract_stack())
         lines = "".join(lines).split('\n')

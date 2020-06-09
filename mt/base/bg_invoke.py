@@ -47,16 +47,17 @@ class BgInvoke(object):
 
     def _wrapper(self, g, *args, **kwargs):
         try:
-            self._result = g(*args, **kwargs)
+            self._result = True, g(*args, **kwargs)
         except Exception as e:
-            self._result = _sys.exc_info()
+            self._result = False, _sys.exc_info()
 
     @property
     def result(self):
         if hasattr(self, '_result'):
-            if isinstance(self._result, tuple) and issubclass(self._result[0], Exception): # an exception
-                raise BgException("Exception raised in background thread {}".format(self.thread.ident), self._result)
-            return self._result
+            if self._result[0]: # succeeded
+                return self._result[1] # returning object
+            else: # thread generated an exception
+                raise BgException("Exception raised in background thread {}".format(self.thread.ident), self._result[1])
         else:
             raise ValueError("Result is not available.")
 

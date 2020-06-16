@@ -241,6 +241,8 @@ def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
                     # wait for 1 sec to see if server disconnects disruptedly or not
                     sleep(1)
                     if connection['closed']: # already closed after 1 second?
+                        if logger:
+                            logger.warning("Connectioned terminated too quickly. Trying the next...")
                         continue # bad config, try another one
 
                     break

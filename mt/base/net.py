@@ -237,6 +237,12 @@ def _pf_server(listen_config, connect_configs, timeout=30, logger=None):
                         connection, True)).start()
                     _t.Thread(target=_pf_forward, args=(
                         connection, False)).start()
+
+                    # wait for 1 sec to see if server disconnects disruptedly or not
+                    sleep(1)
+                    if connection['closed']: # already closed after 1 second?
+                        continue # bad config, try another one
+
                     break
                 except:
                     if logger:

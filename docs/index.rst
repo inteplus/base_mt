@@ -6,6 +6,8 @@
 Welcome to basemt's documentation!
 ==================================
 
+This package is now deprecated. Please use package 'mtbase' instead.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

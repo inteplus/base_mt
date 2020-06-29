@@ -1,6 +1,8 @@
 Installation
 ============
 
+This package is now deprecated. Please use package 'mtbase' intead.
+
 Install via pip::
 
     pip3 install basemt

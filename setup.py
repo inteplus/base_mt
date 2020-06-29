@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
-from setuptools import setup, find_packages, find_namespace_packages
+from setuptools import setup, find_packages
 from mt.base.version import version
 
 setup(name='basemt',
       version=version,
-      description="The most fundamental Python modules for Minh-Tri Pham",
+      description="The most fundamental Python modules for Minh-Tri Pham. The package is now deprecated. Use package 'mtbase' instead.",
       author=["Minh-Tri Pham"],
-      packages=find_packages() + find_namespace_packages(include=['mt.*']),
+      packages=find_packages(),
       install_requires=[
-          'psutil',
-          'colorama',  # for colored text
-          'Cython',  # for fast speed on tiny objects
-          'dask[distributed]',  # for simple multiprocessing jobs
+          'mtbase>=0.4.0',
       ],
       url='https://github.com/inteplus/basemt',
       project_urls={

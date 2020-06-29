@@ -12,7 +12,6 @@ Welcome to basemt's documentation!
 
 
    install	     
-   autoapi/mt/base/index
    autoapi/basemt/index
 
    
